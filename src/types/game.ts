@@ -21,6 +21,12 @@ export enum Difficulty {
   INFINITE = "INFINITE"
 }
 
+export enum InfiniteGameMode {
+  ENDLESS = "ENDLESS",
+  HARDCORE = "HARDCORE",
+  TIMED = "TIMED"
+}
+
 export type DifficultyConfig = {
   rows: number;
   cols: number;
@@ -120,4 +126,11 @@ export interface InfiniteGameState {
   revealedCells: CellCoordinate[];
   flaggedCells: CellCoordinate[];
   elapsedTime: number;
+}
+
+export interface InfiniteGameStats {
+  elapsedTime: number;
+  completedSectors: number;
+  lockedSectors: number;
+  gems: number;
 }

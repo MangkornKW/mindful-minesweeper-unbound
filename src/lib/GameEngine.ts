@@ -1,279 +1,285 @@
+
 import { 
   Cell, 
   CellState, 
-  GameState, 
   CellCoordinate, 
+  GameState, 
   GameStats, 
   Difficulty, 
-  DifficultyConfig, 
-  DIFFICULTY_CONFIGS 
+  DifficultyConfig,
+  DIFFICULTY_CONFIGS
 } from "@/types/game";
-import { TimerManager } from "./game/TimerManager";
+
 import { GridManager } from "./game/GridManager";
+import { TimerManager } from "./game/TimerManager";
 
 export class GameEngine {
+  private grid: Cell[][] = [];
+  private rows: number;
+  private cols: number;
+  private mines: number;
+  private gameState: GameState;
+  private flagsPlaced: number = 0;
+  private cellsRevealed: number = 0;
+  private difficulty: Difficulty = Difficulty.BEGINNER;
+  
   private gridManager: GridManager;
   private timerManager: TimerManager;
-  private gameState: GameState;
-  private stats: GameStats;
-  private config: DifficultyConfig;
-
-  constructor(difficulty: Difficulty = Difficulty.BEGINNER, customConfig?: Partial<DifficultyConfig>) {
-    // Get config for selected difficulty
-    this.config = { ...DIFFICULTY_CONFIGS[difficulty] };
+  
+  constructor() {
+    // Initialize with beginner difficulty
+    const config = DIFFICULTY_CONFIGS[Difficulty.BEGINNER];
+    this.rows = config.rows;
+    this.cols = config.cols;
+    this.mines = config.mines;
     
-    // Apply custom config if provided
-    if (customConfig) {
-      this.config = { ...this.config, ...customConfig };
-    }
-
     // Initialize game state
     this.gameState = GameState.NOT_STARTED;
     
-    // Initialize stats
-    this.stats = {
-      elapsedTime: 0,
-      flagsPlaced: 0,
-      cellsRevealed: 0,
-      totalMines: this.config.mines,
-      flagsRemaining: this.config.mines
-    };
-
-    // Initialize managers
+    // Create grid manager and timer manager
+    this.gridManager = new GridManager();
     this.timerManager = new TimerManager();
-    this.gridManager = new GridManager(
-      this.config.rows, 
-      this.config.cols, 
-      this.config.mines,
-      () => this.incrementCellsRevealed(),
-      (increment) => this.updateFlagCount(increment)
-    );
-  }
-
-  // Helper methods for stats
-  private incrementCellsRevealed(): void {
-    this.stats.cellsRevealed++;
-  }
-
-  private updateFlagCount(increment: boolean): void {
-    if (increment) {
-      this.stats.flagsPlaced++;
-      this.stats.flagsRemaining--;
-    } else {
-      this.stats.flagsPlaced--;
-      this.stats.flagsRemaining++;
-    }
-  }
-
-  // Check if the game is won
-  private checkVictory(): boolean {
-    const { rows, cols, mines } = this.config;
-    const totalCells = rows * cols;
     
-    // Game is won when all non-mine cells are revealed
-    return this.stats.cellsRevealed === totalCells - mines;
+    // Create initial empty grid
+    this.restart();
   }
-
-  // Update configuration
+  
+  // Set difficulty configuration
   public setConfig(config: DifficultyConfig): void {
-    this.config = { ...config };
-    this.stats.totalMines = this.config.mines;
-    this.stats.flagsRemaining = this.config.mines;
-    this.gridManager.reset(this.config.rows, this.config.cols, this.config.mines);
+    this.rows = config.rows;
+    this.cols = config.cols;
+    this.mines = config.mines;
+    
+    this.restart();
   }
-
-  // PUBLIC METHODS
-
-  // Get the current grid
-  getGrid(): Cell[][] {
-    return this.gridManager.getGrid();
+  
+  // Create a new game
+  public restart(): void {
+    this.gameState = GameState.NOT_STARTED;
+    this.flagsPlaced = 0;
+    this.cellsRevealed = 0;
+    
+    // Reset timer
+    this.timerManager.reset();
+    
+    // Create empty grid
+    this.gridManager.reset(this.rows, this.cols, this.mines);
+    this.grid = this.gridManager.getGrid();
   }
-
-  // Get current game state
-  getGameState(): GameState {
-    return this.gameState;
-  }
-
-  // Get game statistics
-  getStats(): GameStats {
-    // Update elapsed time from timer manager
-    this.stats.elapsedTime = this.timerManager.getElapsedTime();
-    return { ...this.stats };
-  }
-
+  
   // Reveal a cell
-  revealCell(row: number, col: number): void {
-    // Ignore if game is over or cell is invalid
-    if (this.gameState === GameState.WON || this.gameState === GameState.LOST || 
-        !this.gridManager.isValidCoord(row, col)) {
+  public revealCell(row: number, col: number): void {
+    // Check if coordinates are valid
+    if (!this.gridManager.isValidCoord(row, col)) {
       return;
     }
     
-    const grid = this.gridManager.getGrid();
-    const cell = grid[row][col];
+    // Get cell from grid
+    const cell = this.grid[row][col];
     
-    // Ignore if cell is already revealed or flagged
-    if (cell.state === CellState.REVEALED || cell.state === CellState.FLAGGED) {
+    // Check if game is over or cell is already revealed
+    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
       return;
     }
     
-    // First click - initialize the game
-    if (this.gameState === GameState.NOT_STARTED) {
-      this.gridManager.placeMines(row, col);
-      this.gameState = GameState.IN_PROGRESS;
-      this.timerManager.startTimer();
-    }
-    
-    // Clicked on a mine - game over
-    if (cell.isMine) {
-      cell.state = CellState.REVEALED;
-      this.gameState = GameState.LOST;
-      this.gridManager.revealAllMines();
-      this.timerManager.stopTimer();
+    // Check if cell is flagged
+    if (cell.state === CellState.FLAGGED || cell.state === CellState.QUESTION) {
       return;
     }
     
-    // Reveal the cell
-    if (cell.adjacentMines === 0) {
-      // Flood fill for empty cells
-      this.gridManager.revealEmptyCells(row, col);
-    } else {
-      cell.state = CellState.REVEALED;
-      this.stats.cellsRevealed++;
-    }
-    
-    // Check victory
-    if (this.checkVictory()) {
-      this.gameState = GameState.WON;
-      this.gridManager.flagAllMines(); // Auto-flag all mines on win
-      this.timerManager.stopTimer();
-    }
-  }
-
-  // Toggle flag on a cell
-  toggleFlag(row: number, col: number): void {
-    // Ignore if game is over or not started
-    if (this.gameState === GameState.WON || this.gameState === GameState.LOST || 
-        !this.gridManager.isValidCoord(row, col)) {
-      return;
-    }
-    
-    // Start the game if not already started
-    if (this.gameState === GameState.NOT_STARTED) {
-      this.gameState = GameState.IN_PROGRESS;
-      this.timerManager.startTimer();
-    }
-    
-    const grid = this.gridManager.getGrid();
-    const cell = grid[row][col];
-    
-    // Cannot flag revealed cells
+    // Check if cell is already revealed
     if (cell.state === CellState.REVEALED) {
       return;
+    }
+    
+    // First click - start game and place mines
+    if (this.gameState === GameState.NOT_STARTED) {
+      this.gameState = GameState.IN_PROGRESS;
+      this.gridManager.placeMines(row, col);
+      this.timerManager.startTimer();
+    }
+    
+    // Reveal cell
+    cell.state = CellState.REVEALED;
+    this.cellsRevealed++;
+    
+    // Check if cell contains a mine
+    if (cell.isMine) {
+      this.gameState = GameState.LOST;
+      this.timerManager.stopTimer();
+      this.gridManager.revealAllMines();
+      return;
+    }
+    
+    // If cell has no adjacent mines, reveal adjacent cells
+    if (cell.adjacentMines === 0) {
+      const revealedCount = this.gridManager.revealEmptyCells(row, col);
+      this.cellsRevealed += revealedCount;
+    }
+    
+    // Check for win condition
+    this.checkWinCondition();
+  }
+  
+  // Toggle flag on a cell
+  public toggleFlag(row: number, col: number): void {
+    // Check if coordinates are valid
+    if (!this.gridManager.isValidCoord(row, col)) {
+      return;
+    }
+    
+    // Get cell from grid
+    const cell = this.grid[row][col];
+    
+    // Check if game is over or cell is revealed
+    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
+      return;
+    }
+    
+    if (cell.state === CellState.REVEALED) {
+      return;
+    }
+    
+    // Start game if not started
+    if (this.gameState === GameState.NOT_STARTED) {
+      this.gameState = GameState.IN_PROGRESS;
+      this.timerManager.startTimer();
     }
     
     // Toggle flag state
     switch (cell.state) {
       case CellState.UNREVEALED:
-        if (this.stats.flagsRemaining > 0) {
-          cell.state = CellState.FLAGGED;
-          this.stats.flagsPlaced++;
-          this.stats.flagsRemaining--;
-        }
+        cell.state = CellState.FLAGGED;
+        this.flagsPlaced++;
         break;
-        
       case CellState.FLAGGED:
+        // Toggle through question mark if enabled in settings
         cell.state = CellState.QUESTION;
-        this.stats.flagsPlaced--;
-        this.stats.flagsRemaining++;
+        this.flagsPlaced--;
         break;
-        
       case CellState.QUESTION:
         cell.state = CellState.UNREVEALED;
         break;
     }
   }
-
-  // Chord (middle-click) functionality - reveal adjacent cells when a numbered cell has correct flags
-  chordCell(row: number, col: number): void {
-    // Ignore if game is over or cell is invalid
-    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
-      return;
-    }
-    
+  
+  // Chord (middle-click) functionality
+  public chordCell(row: number, col: number): void {
+    // Check if coordinates are valid
     if (!this.gridManager.isValidCoord(row, col)) {
       return;
     }
     
     // Only allow chording on in-progress games
-    if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
+    if (this.gameState !== GameState.IN_PROGRESS) {
       return;
     }
     
-    const grid = this.gridManager.getGrid();
-    const cell = grid[row][col];
+    const cell = this.grid[row][col];
     
-    // Can only chord on revealed numbered cells
+    // Only chord on revealed cells with adjacent mines
     if (cell.state !== CellState.REVEALED || cell.adjacentMines === 0) {
       return;
     }
     
     // Count adjacent flags
     let flagCount = 0;
-    const adjacentCells: CellCoordinate[] = [];
+    const directions = [
+      [-1, -1], [-1, 0], [-1, 1],
+      [0, -1],           [0, 1],
+      [1, -1],  [1, 0],  [1, 1]
+    ];
     
-    for (let r = Math.max(0, row - 1); r <= Math.min(this.config.rows - 1, row + 1); r++) {
-      for (let c = Math.max(0, col - 1); c <= Math.min(this.config.cols - 1, col + 1); c++) {
-        if (r === row && c === col) continue;
-        
-        const adjacentCell = grid[r][c];
-        if (adjacentCell.state === CellState.FLAGGED) {
-          flagCount++;
-        } else if (adjacentCell.state === CellState.UNREVEALED) {
-          adjacentCells.push({ row: r, col: c });
-        }
+    for (const [dx, dy] of directions) {
+      const newRow = row + dx;
+      const newCol = col + dy;
+      
+      if (this.gridManager.isValidCoord(newRow, newCol) && 
+          this.grid[newRow][newCol].state === CellState.FLAGGED) {
+        flagCount++;
       }
     }
     
-    // If the number of flags matches the number on the cell, reveal all adjacent non-flagged cells
+    // If flag count matches adjacent mines, reveal all unflagged adjacent cells
     if (flagCount === cell.adjacentMines) {
-      let gameEnded = false;
-      for (const { row: r, col: c } of adjacentCells) {
-        this.revealCell(r, c);
+      let hitMine = false;
+      
+      for (const [dx, dy] of directions) {
+        const newRow = row + dx;
+        const newCol = col + dy;
         
-        // Stop if game is over after revealing a cell
-        if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
-          gameEnded = true;
-          break;
+        if (this.gridManager.isValidCoord(newRow, newCol)) {
+          const adjacentCell = this.grid[newRow][newCol];
+          
+          if (adjacentCell.state !== CellState.REVEALED && 
+              adjacentCell.state !== CellState.FLAGGED) {
+            // Reveal the cell
+            if (adjacentCell.isMine) {
+              hitMine = true;
+              adjacentCell.state = CellState.REVEALED;
+            } else {
+              this.revealCell(newRow, newCol);
+            }
+          }
         }
+      }
+      
+      // If we hit a mine, game over
+      if (hitMine) {
+        this.gameState = GameState.LOST;
+        this.timerManager.stopTimer();
+        this.gridManager.revealAllMines();
       }
     }
   }
-
-  // Calculate score based on time and difficulty
-  calculateScore(): number {
-    if (this.gameState !== GameState.WON) return 0;
+  
+  // Check win condition
+  private checkWinCondition(): void {
+    const totalCells = this.rows * this.cols;
+    const safeCells = totalCells - this.mines;
     
-    const maxBonus = 1000 * this.config.multiplier;
-    return Math.max(0, maxBonus - (this.stats.elapsedTime * this.config.multiplier));
+    if (this.cellsRevealed === safeCells) {
+      this.gameState = GameState.WON;
+      this.timerManager.stopTimer();
+      this.flagsPlaced += this.gridManager.flagAllMines();
+    }
   }
-
-  // Restart the game with the same difficulty
-  restart(): void {
-    this.timerManager.reset();
-    this.gridManager.reset(this.config.rows, this.config.cols, this.config.mines);
-    this.gameState = GameState.NOT_STARTED;
-    this.stats = {
-      elapsedTime: 0,
-      flagsPlaced: 0,
-      cellsRevealed: 0,
-      totalMines: this.config.mines,
-      flagsRemaining: this.config.mines
+  
+  // Calculate score based on time and difficulty
+  public calculateScore(): number {
+    if (this.gameState !== GameState.WON) {
+      return 0;
+    }
+    
+    const timeBonus = Math.max(1, 1000 - this.timerManager.getElapsedTime() * 10);
+    const difficultyMultiplier = DIFFICULTY_CONFIGS[this.difficulty].multiplier;
+    
+    return Math.floor(timeBonus * difficultyMultiplier);
+  }
+  
+  // Get current grid
+  public getGrid(): Cell[][] {
+    return this.grid;
+  }
+  
+  // Get current game state
+  public getGameState(): GameState {
+    return this.gameState;
+  }
+  
+  // Get current game stats
+  public getStats(): GameStats {
+    return {
+      elapsedTime: this.timerManager.getElapsedTime(),
+      flagsPlaced: this.flagsPlaced,
+      cellsRevealed: this.cellsRevealed,
+      totalMines: this.mines,
+      flagsRemaining: this.mines - this.flagsPlaced
     };
   }
-
-  // Clean up when component unmounts
-  cleanup(): void {
+  
+  // Cleanup resources
+  public cleanup(): void {
     this.timerManager.cleanup();
   }
 }
