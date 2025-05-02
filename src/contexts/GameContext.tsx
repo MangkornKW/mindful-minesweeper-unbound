@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { GameEngine } from "@/lib/GameEngine";
 import { 
   Cell, 
@@ -30,12 +30,13 @@ interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [gameEngine, setGameEngine] = useState<GameEngine>(() => new GameEngine());
+  const [gameEngine] = useState<GameEngine>(() => new GameEngine());
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [gameState, setGameState] = useState<GameState>(GameState.NOT_STARTED);
   const [stats, setStats] = useState<GameStats>({ elapsedTime: 0, flagsPlaced: 0, cellsRevealed: 0, totalMines: 0, flagsRemaining: 0 });
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.BEGINNER);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const [shouldUpdateState, setShouldUpdateState] = useState(false);
   const { settings } = useSettings();
   const { toast } = useToast();
   
@@ -52,7 +53,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result: GameResult = {
         score,
         victory: currentState === GameState.WON,
-        elapsedTime: stats.elapsedTime,
+        elapsedTime: gameEngine.getStats().elapsedTime,
         difficulty,
         date: new Date()
       };
@@ -62,12 +63,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         title: currentState === GameState.WON ? "Victory!" : "Game Over",
         description: currentState === GameState.WON 
-          ? `You won in ${stats.elapsedTime} seconds with a score of ${score}!` 
+          ? `You won in ${gameEngine.getStats().elapsedTime} seconds with a score of ${score}!` 
           : "Better luck next time!",
         variant: currentState === GameState.WON ? "default" : "destructive",
       });
     }
-  }, [gameEngine, difficulty, stats.elapsedTime, toast]);
+  }, [gameEngine, difficulty, toast]);
   
   // Timer effect to update stats periodically
   useEffect(() => {
@@ -79,40 +80,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => clearInterval(interval);
     }
   }, [gameEngine, gameState]);
+
+  // Update game state when needed
+  useEffect(() => {
+    if (shouldUpdateState) {
+      updateGameState();
+      setShouldUpdateState(false);
+    }
+  }, [shouldUpdateState, updateGameState]);
   
   // Reveal a cell
   const revealCell = useCallback((row: number, col: number) => {
     gameEngine.revealCell(row, col);
-    updateGameState();
-  }, [gameEngine, updateGameState]);
+    setShouldUpdateState(true);
+  }, [gameEngine]);
   
   // Toggle flag on a cell
   const toggleFlag = useCallback((row: number, col: number) => {
     gameEngine.toggleFlag(row, col);
-    updateGameState();
-  }, [gameEngine, updateGameState]);
+    setShouldUpdateState(true);
+  }, [gameEngine]);
   
   // Chord (middle-click) functionality
   const chordCell = useCallback((row: number, col: number) => {
     gameEngine.chordCell(row, col);
-    updateGameState();
-  }, [gameEngine, updateGameState]);
+    setShouldUpdateState(true);
+  }, [gameEngine]);
   
   // Start a new game
   const startNewGame = useCallback((newDifficulty: Difficulty, customConfig?: Partial<DifficultyConfig>) => {
-    const engine = new GameEngine(newDifficulty, customConfig);
-    setGameEngine(engine);
-    setDifficulty(newDifficulty);
+    // Reset the game engine with new difficulty
+    gameEngine.restart();
+    
+    // Update difficulty and config if needed
+    if (newDifficulty !== difficulty || customConfig) {
+      const config = { ...DIFFICULTY_CONFIGS[newDifficulty], ...customConfig };
+      gameEngine.setConfig(config);
+      setDifficulty(newDifficulty);
+    }
+    
     setGameResult(null);
-    updateGameState();
-  }, [updateGameState]);
+    setShouldUpdateState(true);
+  }, [gameEngine, difficulty]);
   
   // Restart the current game
   const restartGame = useCallback(() => {
     gameEngine.restart();
     setGameResult(null);
-    updateGameState();
-  }, [gameEngine, updateGameState]);
+    setShouldUpdateState(true);
+  }, [gameEngine]);
   
   // Initialize game on mount
   useEffect(() => {
@@ -120,8 +136,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => gameEngine.cleanup();
   }, [gameEngine, updateGameState]);
   
-  // Provide context value
-  const contextValue: GameContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     grid,
     gameState,
     stats,
@@ -132,7 +148,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     startNewGame,
     restartGame,
     gameResult
-  };
+  }), [grid, gameState, stats, difficulty, revealCell, toggleFlag, chordCell, startNewGame, restartGame, gameResult]);
   
   return (
     <GameContext.Provider value={contextValue}>

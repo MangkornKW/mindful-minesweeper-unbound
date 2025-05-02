@@ -47,7 +47,7 @@ export class GameEngine {
       this.config.cols, 
       this.config.mines,
       () => this.incrementCellsRevealed(),
-      (increment) => this.toggleFlag(increment)
+      (increment) => this.updateFlagCount(increment)
     );
   }
 
@@ -56,7 +56,7 @@ export class GameEngine {
     this.stats.cellsRevealed++;
   }
 
-  private toggleFlag(increment: boolean): void {
+  private updateFlagCount(increment: boolean): void {
     if (increment) {
       this.stats.flagsPlaced++;
       this.stats.flagsRemaining--;
@@ -73,6 +73,14 @@ export class GameEngine {
     
     // Game is won when all non-mine cells are revealed
     return this.stats.cellsRevealed === totalCells - mines;
+  }
+
+  // Update configuration
+  public setConfig(config: DifficultyConfig): void {
+    this.config = { ...config };
+    this.stats.totalMines = this.config.mines;
+    this.stats.flagsRemaining = this.config.mines;
+    this.gridManager.reset(this.config.rows, this.config.cols, this.config.mines);
   }
 
   // PUBLIC METHODS
@@ -221,11 +229,13 @@ export class GameEngine {
     
     // If the number of flags matches the number on the cell, reveal all adjacent non-flagged cells
     if (flagCount === cell.adjacentMines) {
+      let gameEnded = false;
       for (const { row: r, col: c } of adjacentCells) {
         this.revealCell(r, c);
         
         // Stop if game is over after revealing a cell
         if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
+          gameEnded = true;
           break;
         }
       }

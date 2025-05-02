@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import GameBoard from "@/components/GameBoard";
@@ -13,7 +13,8 @@ const GamePageContent: React.FC = () => {
   const navigate = useNavigate();
   const { startNewGame } = useGame();
   
-  useEffect(() => {
+  // Initialize game on mount, only once
+  const initializeGame = useCallback(() => {
     // Get difficulty from location state, or default to Beginner
     const state = location.state as { difficulty: Difficulty } | undefined;
     const difficulty = state?.difficulty || Difficulty.BEGINNER;
@@ -21,6 +22,10 @@ const GamePageContent: React.FC = () => {
     // Start a new game with the selected difficulty
     startNewGame(difficulty);
   }, [location.state, startNewGame]);
+  
+  useEffect(() => {
+    initializeGame();
+  }, [initializeGame]);
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted">

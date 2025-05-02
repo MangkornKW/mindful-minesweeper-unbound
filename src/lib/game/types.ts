@@ -1,15 +1,8 @@
 
 import { Cell, CellState, GameState, CellCoordinate, GameStats, Difficulty, DifficultyConfig } from "@/types/game";
 
-export {
-  Cell,
-  CellState,
-  GameState,
-  CellCoordinate,
-  GameStats,
-  Difficulty,
-  DifficultyConfig
-};
+// Re-export types with the 'export type' syntax for isolated modules
+export type { Cell, CellState, GameState, CellCoordinate, GameStats, Difficulty, DifficultyConfig };
 
 export interface ITimerManager {
   startTimer: () => void;
@@ -17,6 +10,7 @@ export interface ITimerManager {
   updateTimer: () => void;
   getElapsedTime: () => number;
   cleanup: () => void;
+  reset: () => void;
 }
 
 export interface IGridManager {
@@ -29,4 +23,5 @@ export interface IGridManager {
   revealAllMines: () => void;
   flagAllMines: () => number;
   calculateAdjacentMines: () => void;
+  reset: (rows: number, cols: number, mines: number) => void;
 }
