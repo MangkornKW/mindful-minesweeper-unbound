@@ -1,4 +1,3 @@
-
 import { 
   Cell, 
   CellState, 
@@ -202,7 +201,12 @@ export class GameEngine {
       return;
     }
     
-    if (!this.gridManager.isValidCoord(row, col) || this.gameState !== GameState.IN_PROGRESS) {
+    if (!this.gridManager.isValidCoord(row, col)) {
+      return;
+    }
+    
+    // Only allow chording on in-progress games
+    if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
       return;
     }
     

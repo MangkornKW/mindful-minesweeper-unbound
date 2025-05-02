@@ -56,7 +56,13 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
   const handleMouseUp = (e: React.MouseEvent) => {
     if (e.button === 0 && isLongPressing) {
       setIsLongPressing(false);
-      onReveal(cell.row, cell.col);
+      
+      // If cell is already revealed and has adjacent mines, use chord functionality
+      if (cell.state === CellState.REVEALED && cell.adjacentMines > 0) {
+        onChord(cell.row, cell.col);
+      } else {
+        onReveal(cell.row, cell.col);
+      }
     }
   };
   
@@ -72,7 +78,13 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
   const handleTouchEnd = () => {
     if (isLongPressing) {
       setIsLongPressing(false);
-      onReveal(cell.row, cell.col);
+      
+      // If cell is already revealed and has adjacent mines, use chord functionality
+      if (cell.state === CellState.REVEALED && cell.adjacentMines > 0) {
+        onChord(cell.row, cell.col);
+      } else {
+        onReveal(cell.row, cell.col);
+      }
     }
   };
   
