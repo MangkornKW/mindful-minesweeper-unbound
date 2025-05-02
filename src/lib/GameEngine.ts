@@ -198,7 +198,11 @@ export class GameEngine {
   // Chord (middle-click) functionality - reveal adjacent cells when a numbered cell has correct flags
   chordCell(row: number, col: number): void {
     // Ignore if game is over or cell is invalid
-    if (this.gameState !== GameState.IN_PROGRESS || !this.gridManager.isValidCoord(row, col)) {
+    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
+      return;
+    }
+    
+    if (!this.gridManager.isValidCoord(row, col) || this.gameState !== GameState.IN_PROGRESS) {
       return;
     }
     
