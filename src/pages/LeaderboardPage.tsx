@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,9 +26,11 @@ const fetchLeaderboardData = async (difficulty: string): Promise<LeaderboardEntr
   }
 
   return data.map(entry => ({
-    ...entry,
     id: entry.id,
+    playerName: entry.player_name,
     difficulty: entry.difficulty as Difficulty,
+    score: entry.score,
+    elapsedTime: entry.elapsed_time,
     date: new Date(entry.date)
   })) as LeaderboardEntry[];
 };
