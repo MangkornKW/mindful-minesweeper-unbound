@@ -37,7 +37,13 @@ export class GameEngine {
     this.gameState = GameState.NOT_STARTED;
     
     // Create grid manager and timer manager
-    this.gridManager = new GridManager();
+    this.gridManager = new GridManager(
+      this.rows, 
+      this.cols, 
+      this.mines, 
+      () => this.cellsRevealed++, 
+      (increment: boolean) => this.flagsPlaced += (increment ? 1 : -1)
+    );
     this.timerManager = new TimerManager();
     
     // Create initial empty grid
