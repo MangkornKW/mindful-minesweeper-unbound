@@ -32,7 +32,8 @@ export class GridManager implements IGridManager {
         state: CellState.UNREVEALED,
         adjacentMines: 0,
         row: rowIndex,
-        col: colIndex
+        col: colIndex,
+        isSuggested: false
       }))
     );
   }
@@ -120,6 +121,20 @@ export class GridManager implements IGridManager {
     }
     
     return cellsRevealed;
+  }
+
+  setSuggestion(row: number, col: number, suggested: boolean): void {
+    if (this.isValidCoord(row, col)) {
+      this.grid[row][col].isSuggested = suggested;
+    }
+  }
+
+  clearAllSuggestions(): void {
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        this.grid[row][col].isSuggested = false;
+      }
+    }
   }
 
   revealAllMines(): void {

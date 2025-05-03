@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { GameEngine } from "@/lib/GameEngine";
 import { 
@@ -22,6 +21,7 @@ interface GameContextType {
   revealCell: (row: number, col: number) => void;
   toggleFlag: (row: number, col: number) => void;
   chordCell: (row: number, col: number) => void;
+  generateSuggestions: () => void;
   startNewGame: (difficulty: Difficulty, customConfig?: Partial<DifficultyConfig>) => void;
   restartGame: () => void;
   gameResult: GameResult | null;
@@ -107,6 +107,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShouldUpdateState(true);
   }, [gameEngine]);
   
+  // Generate suggestions for border cells
+  const generateSuggestions = useCallback(() => {
+    gameEngine.generateSuggestions();
+    setShouldUpdateState(true);
+  }, [gameEngine]);
+  
   // Start a new game
   const startNewGame = useCallback((newDifficulty: Difficulty, customConfig?: Partial<DifficultyConfig>) => {
     // Reset the game engine with new difficulty
@@ -145,10 +151,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     revealCell,
     toggleFlag,
     chordCell,
+    generateSuggestions,
     startNewGame,
     restartGame,
     gameResult
-  }), [grid, gameState, stats, difficulty, revealCell, toggleFlag, chordCell, startNewGame, restartGame, gameResult]);
+  }), [grid, gameState, stats, difficulty, revealCell, toggleFlag, chordCell, generateSuggestions, startNewGame, restartGame, gameResult]);
   
   return (
     <GameContext.Provider value={contextValue}>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Cell, CellState } from "@/types/game";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/contexts/SettingsContext";
-import { FlagIcon, HelpCircleIcon, BombIcon } from "lucide-react";
+import { FlagIcon, HelpCircleIcon, BombIcon, BorderOuterIcon } from "lucide-react";
 
 interface GameCellProps {
   cell: Cell;
@@ -101,7 +101,7 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
   const getCellContent = () => {
     switch (cell.state) {
       case CellState.UNREVEALED:
-        return null;
+        return cell.isSuggested ? <BorderOuterIcon className="w-4 h-4 text-blue-500" /> : null;
       case CellState.FLAGGED:
         return <FlagIcon className="w-4 h-4" />;
       case CellState.QUESTION:
@@ -136,7 +136,10 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
       return `${baseClass} cell-unrevealed`;
     }
     
-    return `${baseClass} cell-unrevealed`;
+    return cn(
+      `${baseClass} cell-unrevealed`,
+      cell.isSuggested && "border-2 border-blue-500"
+    );
   };
   
   // Animation effect when cell is revealed
