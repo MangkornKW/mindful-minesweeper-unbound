@@ -2,17 +2,17 @@
 import { 
   Cell, 
   CellCoordinate, 
+  GameState, 
   GameStats, 
+  Difficulty, 
   DifficultyConfig,
-  CellState,
-  GameState,
-  Difficulty
+  CellState
 } from "@/types/game";
 
-// Re-export enums so they can be used as both types AND values
+// Re-export enums directly so they can be used as types AND values
 export { CellState, GameState, Difficulty };
 
-// Re-export other types
+// Re-export other types with the 'export type' syntax for isolated modules
 export type { Cell, CellCoordinate, GameStats, DifficultyConfig };
 
 export interface ITimerManager {
