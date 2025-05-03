@@ -206,7 +206,7 @@ export class GameEngine {
     }
     
     // Only allow chording on in-progress games
-    if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
+    if (this.gameState !== GameState.IN_PROGRESS) {
       return;
     }
     

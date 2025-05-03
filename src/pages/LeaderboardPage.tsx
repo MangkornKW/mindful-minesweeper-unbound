@@ -1,36 +1,51 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Difficulty } from "@/types/game";
 import LeaderboardTable from "@/components/LeaderboardTable";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { LeaderboardEntry } from "@/types/game";
+import { useAuth } from "@/contexts/AuthContext";
+import LoginButton from "@/components/LoginButton";
 
-// Mock leaderboard data (would typically come from a database)
-const MOCK_LEADERBOARD_DATA = {
-  [Difficulty.BEGINNER]: [
-    { id: 'b1', playerName: 'Player1', score: 980, difficulty: Difficulty.BEGINNER, elapsedTime: 43, date: new Date(2023, 4, 15) },
-    { id: 'b2', playerName: 'Player2', score: 920, difficulty: Difficulty.BEGINNER, elapsedTime: 62, date: new Date(2023, 4, 17) },
-    { id: 'b3', playerName: 'Player3', score: 890, difficulty: Difficulty.BEGINNER, elapsedTime: 74, date: new Date(2023, 4, 18) },
-  ],
-  [Difficulty.INTERMEDIATE]: [
-    { id: 'i1', playerName: 'Player2', score: 1850, difficulty: Difficulty.INTERMEDIATE, elapsedTime: 145, date: new Date(2023, 4, 10) },
-    { id: 'i2', playerName: 'Player1', score: 1620, difficulty: Difficulty.INTERMEDIATE, elapsedTime: 198, date: new Date(2023, 4, 12) },
-  ],
-  [Difficulty.EXPERT]: [
-    { id: 'e1', playerName: 'Player3', score: 3200, difficulty: Difficulty.EXPERT, elapsedTime: 382, date: new Date(2023, 4, 8) },
-  ],
-  [Difficulty.INFINITE]: []
+const fetchLeaderboardData = async (difficulty: string): Promise<LeaderboardEntry[]> => {
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .eq('difficulty', difficulty)
+    .order('score', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error("Error fetching leaderboard data:", error);
+    throw new Error(error.message);
+  }
+
+  return data.map(entry => ({
+    ...entry,
+    id: entry.id,
+    difficulty: entry.difficulty as Difficulty,
+    date: new Date(entry.date)
+  })) as LeaderboardEntry[];
 };
 
 const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(Difficulty.BEGINNER);
   
+  const { data: leaderboardData, isLoading, error } = useQuery({
+    queryKey: ['leaderboard', selectedDifficulty],
+    queryFn: () => fetchLeaderboardData(selectedDifficulty),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted">
-      <header className="p-4 border-b">
+      <header className="p-4 border-b flex justify-between items-center">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
@@ -42,6 +57,7 @@ const LeaderboardPage: React.FC = () => {
           </Button>
           <h1 className="text-xl font-bold">Leaderboard</h1>
         </div>
+        <LoginButton />
       </header>
       
       <main className="flex-1 p-6 max-w-4xl mx-auto w-full">
@@ -57,37 +73,32 @@ const LeaderboardPage: React.FC = () => {
             <TabsTrigger value={Difficulty.INFINITE}>Infinite</TabsTrigger>
           </TabsList>
           
-          <TabsContent value={Difficulty.BEGINNER}>
-            <LeaderboardTable 
-              entries={MOCK_LEADERBOARD_DATA[Difficulty.BEGINNER]} 
-              selectedDifficulty={Difficulty.BEGINNER} 
-            />
-          </TabsContent>
-          
-          <TabsContent value={Difficulty.INTERMEDIATE}>
-            <LeaderboardTable 
-              entries={MOCK_LEADERBOARD_DATA[Difficulty.INTERMEDIATE]} 
-              selectedDifficulty={Difficulty.INTERMEDIATE} 
-            />
-          </TabsContent>
-          
-          <TabsContent value={Difficulty.EXPERT}>
-            <LeaderboardTable 
-              entries={MOCK_LEADERBOARD_DATA[Difficulty.EXPERT]} 
-              selectedDifficulty={Difficulty.EXPERT} 
-            />
-          </TabsContent>
-          
-          <TabsContent value={Difficulty.INFINITE}>
-            <LeaderboardTable 
-              entries={MOCK_LEADERBOARD_DATA[Difficulty.INFINITE]} 
-              selectedDifficulty={Difficulty.INFINITE} 
-            />
-          </TabsContent>
+          {Object.values(Difficulty).map((diff) => (
+            <TabsContent key={diff} value={diff}>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : error ? (
+                <div className="text-center py-12 text-red-500">
+                  Error loading leaderboard data. Please try again later.
+                </div>
+              ) : (
+                <LeaderboardTable 
+                  entries={leaderboardData || []} 
+                  selectedDifficulty={diff as Difficulty} 
+                />
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
         
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Scores are saved locally on your device.</p>
+          <p>
+            {user ? 
+              "Your scores will be saved to the leaderboard when you complete a game." : 
+              "Sign in to save your scores to the leaderboard."}
+          </p>
         </div>
       </main>
     </div>
