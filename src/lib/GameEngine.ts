@@ -400,4 +400,12 @@ export class GameEngine {
   cleanup(): void {
     this.timerManager.cleanup();
   }
+
+  // Check if game is lost - needs to handle both standard and infinite modes
+  private checkGameOver(): boolean {
+    if (this.gameState === GameState.LOST || this.gameState === GameState.WON) {
+      return true;
+    }
+    return false;
+  }
 }

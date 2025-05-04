@@ -1,11 +1,10 @@
-
 import { 
   Cell, 
   CellState, 
   CellCoordinate, 
   BlockCoordinate,
   InfiniteBlock
-} from "./types";
+} from "@/types/game";
 
 export class InfiniteGridManager {
   private blocks: Map<string, InfiniteBlock>;
@@ -176,7 +175,8 @@ export class InfiniteGridManager {
                 continue;
               }
               
-              const neighborCell = this.getCellAt({ row: absoluteRow, col: absoluteCol });
+              // Get the neighbor cell safely
+              const neighborCell = this.getSafeNeighborCell({ row: absoluteRow, col: absoluteCol });
               if (neighborCell?.isMine) count++;
             } else {
               // Check within current block
@@ -188,6 +188,48 @@ export class InfiniteGridManager {
         block.cells[r][c].adjacentMines = count;
       }
     }
+  }
+  
+  // Safe method to get neighbor cells without recursion
+  private getSafeNeighborCell(coord: CellCoordinate): Cell | undefined {
+    const blockCoord = this.getBlockCoordFromCell(coord);
+    const blockKey = this.getBlockKey(blockCoord);
+    
+    // If we already have this block, get the cell from it
+    if (this.blocks.has(blockKey)) {
+      const block = this.blocks.get(blockKey)!;
+      const { startRow, startCol } = this.getBlockCellRange(blockCoord);
+      
+      const relativeRow = coord.row - startRow;
+      const relativeCol = coord.col - startCol;
+      
+      if (relativeRow >= 0 && relativeRow < this.blockSize && 
+          relativeCol >= 0 && relativeCol < this.blockSize) {
+        return block.cells[relativeRow][relativeCol];
+      }
+      
+      return undefined;
+    }
+    
+    // If we're already processing this block, assume no mine to break recursion
+    if (this.processingBlocks.has(blockKey)) {
+      return {
+        isMine: false,
+        state: CellState.UNREVEALED,
+        adjacentMines: 0,
+        row: coord.row,
+        col: coord.col
+      };
+    }
+    
+    // Otherwise, create temporary non-mine cell to avoid recursion
+    return {
+      isMine: false,
+      state: CellState.UNREVEALED,
+      adjacentMines: 0,
+      row: coord.row,
+      col: coord.col
+    };
   }
   
   // Ensure all blocks in the current viewport exist
