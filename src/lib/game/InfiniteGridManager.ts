@@ -15,7 +15,9 @@ export class InfiniteGridManager {
   private baseMinePercent: number = 0.15; // Starting mine density
   private onCellRevealed: () => void;
   private onFlagToggled: (increment: boolean) => void;
-  private processingBlocks: Set<string>; // Track blocks being processed to prevent recursion
+  private processingBlocks: Set<string>; // Track blocks being processed
+  private exploredBlocks: Set<string>; // Track explored blocks
+  private lockedBlocks: Set<string>; // Track locked (hit mine) blocks
 
   constructor(
     initialViewportRows: number, 
@@ -31,7 +33,9 @@ export class InfiniteGridManager {
     };
     this.onCellRevealed = onCellRevealed;
     this.onFlagToggled = onFlagToggled;
-    this.processingBlocks = new Set(); // Initialize set to track blocks in processing
+    this.processingBlocks = new Set();
+    this.exploredBlocks = new Set();
+    this.lockedBlocks = new Set();
     
     // Initialize the visible blocks
     this.ensureViewportBlocksExist();
@@ -64,29 +68,18 @@ export class InfiniteGridManager {
     };
   }
   
+  // Check if a block is being processed to prevent recursion
+  private isBlockProcessing(blockKey: string): boolean {
+    return this.processingBlocks.has(blockKey);
+  }
+  
   // Create a new block at the specified coordinates
   private createBlock(blockCoord: BlockCoordinate): InfiniteBlock {
     const blockKey = this.getBlockKey(blockCoord);
     
-    // Check if this block is already being processed (to break recursion)
-    if (this.processingBlocks.has(blockKey)) {
-      // Return a temporary block with no mines to break the recursion
-      const tempBlock: InfiniteBlock = {
-        coordinate: {...blockCoord},
-        cells: Array(this.blockSize).fill(null).map((_, r) => 
-          Array(this.blockSize).fill(null).map((_, c) => ({
-            isMine: false,
-            state: CellState.UNREVEALED,
-            adjacentMines: 0,
-            row: blockCoord.blockRow * this.blockSize + r,
-            col: blockCoord.blockCol * this.blockSize + c
-          }))
-        ),
-        isLocked: false,
-        isExplored: false,
-        difficulty: 0
-      };
-      return tempBlock;
+    // Return default block if already being processed to break recursion
+    if (this.isBlockProcessing(blockKey)) {
+      return this.createEmptyBlock(blockCoord);
     }
     
     // Mark this block as being processed
@@ -131,7 +124,7 @@ export class InfiniteGridManager {
       difficulty
     };
     
-    // Temporarily remove block from processing to calculate adjacent mines
+    // Remove from processing set
     this.processingBlocks.delete(blockKey);
     
     // Calculate adjacent mines for all cells in this block
@@ -140,9 +133,37 @@ export class InfiniteGridManager {
     return block;
   }
   
+  // Create an empty block for recursion breaking
+  private createEmptyBlock(blockCoord: BlockCoordinate): InfiniteBlock {
+    const { startRow, startCol } = this.getBlockCellRange(blockCoord);
+    
+    const cells: Cell[][] = [];
+    for (let r = 0; r < this.blockSize; r++) {
+      const row: Cell[] = [];
+      for (let c = 0; c < this.blockSize; c++) {
+        row.push({
+          isMine: false,
+          state: CellState.UNREVEALED,
+          adjacentMines: 0,
+          row: startRow + r,
+          col: startCol + c
+        });
+      }
+      cells.push(row);
+    }
+    
+    return {
+      coordinate: {...blockCoord},
+      cells,
+      isLocked: false,
+      isExplored: false,
+      difficulty: 0
+    };
+  }
+  
   // Calculate adjacent mines for all cells in a block
   private calculateAdjacentMinesForBlock(block: InfiniteBlock): void {
-    // Add this block to processing set to prevent recursion
+    // Add block to processing set to prevent recursion
     const blockKey = this.getBlockKey(block.coordinate);
     this.processingBlocks.add(blockKey);
     
@@ -163,11 +184,11 @@ export class InfiniteGridManager {
             const absoluteRow = startRow + checkRow;
             const absoluteCol = startCol + checkCol;
             
-            // If we're looking outside the current block
+            // If checking outside current block
             if (checkRow < 0 || checkRow >= this.blockSize || 
                 checkCol < 0 || checkCol >= this.blockSize) {
               
-              // Get the neighbor cell safely without causing recursion
+              // Get adjacent block cell without recursion issues
               const neighborCell = this.getSafeNeighborCell({ row: absoluteRow, col: absoluteCol });
               if (neighborCell?.isMine) count++;
             } else {
@@ -181,7 +202,7 @@ export class InfiniteGridManager {
       }
     }
     
-    // Remove block from processing
+    // Remove from processing set
     this.processingBlocks.delete(blockKey);
   }
   
@@ -189,6 +210,17 @@ export class InfiniteGridManager {
   private getSafeNeighborCell(coord: CellCoordinate): Cell | undefined {
     const blockCoord = this.getBlockCoordFromCell(coord);
     const blockKey = this.getBlockKey(blockCoord);
+    
+    // If already in processing, return non-mine cell to break recursion
+    if (this.isBlockProcessing(blockKey)) {
+      return {
+        isMine: false,
+        state: CellState.UNREVEALED,
+        adjacentMines: 0,
+        row: coord.row,
+        col: coord.col
+      };
+    }
     
     // If we already have this block, get the cell from it
     if (this.blocks.has(blockKey)) {
@@ -202,19 +234,6 @@ export class InfiniteGridManager {
           relativeCol >= 0 && relativeCol < this.blockSize) {
         return block.cells[relativeRow][relativeCol];
       }
-      
-      return undefined;
-    }
-    
-    // If we're already processing this block, assume no mine to break recursion
-    if (this.processingBlocks.has(blockKey)) {
-      return {
-        isMine: false,
-        state: CellState.UNREVEALED,
-        adjacentMines: 0,
-        row: coord.row,
-        col: coord.col
-      };
     }
     
     // Create a default cell without recursively creating blocks
@@ -275,18 +294,20 @@ export class InfiniteGridManager {
   
   // Pan the viewport in a specified direction
   public panViewport(direction: 'up' | 'down' | 'left' | 'right', amount: number = 1): void {
+    const panAmount = this.blockSize / 2; // Pan by half a block size for smoother movement
+    
     switch (direction) {
       case 'up':
-        this.viewportOrigin.row = Math.max(0, this.viewportOrigin.row - amount);
+        this.viewportOrigin.row = Math.max(0, this.viewportOrigin.row - panAmount);
         break;
       case 'down':
-        this.viewportOrigin.row += amount;
+        this.viewportOrigin.row += panAmount;
         break;
       case 'left':
-        this.viewportOrigin.col = Math.max(0, this.viewportOrigin.col - amount);
+        this.viewportOrigin.col = Math.max(0, this.viewportOrigin.col - panAmount);
         break;
       case 'right':
-        this.viewportOrigin.col += amount;
+        this.viewportOrigin.col += panAmount;
         break;
     }
     
@@ -301,8 +322,8 @@ export class InfiniteGridManager {
     for (let r = 0; r < this.viewportSize.rows; r++) {
       const row: Cell[] = [];
       for (let c = 0; c < this.viewportSize.cols; c++) {
-        const absoluteRow = this.viewportOrigin.row + r;
-        const absoluteCol = this.viewportOrigin.col + c;
+        const absoluteRow = Math.floor(this.viewportOrigin.row) + r;
+        const absoluteCol = Math.floor(this.viewportOrigin.col) + c;
         
         const cell = this.getCellAt({ row: absoluteRow, col: absoluteCol });
         if (cell) {
@@ -346,10 +367,13 @@ export class InfiniteGridManager {
     if (cell.isMine) {
       cell.state = CellState.REVEALED;
       hitMine = true;
+      
       // Lock the block
       if (block) {
         block.isLocked = true;
+        this.lockedBlocks.add(blockKey);
       }
+      
       this.onCellRevealed();
       return { cellsRevealed: 1, hitMine };
     }
@@ -376,6 +400,7 @@ export class InfiniteGridManager {
       
       if (revealedCount > (this.blockSize * this.blockSize * 0.7)) {
         block.isExplored = true;
+        this.exploredBlocks.add(blockKey);
       }
     }
     
@@ -394,9 +419,8 @@ export class InfiniteGridManager {
     // Check if the cell is in a locked block
     const blockCoord = this.getBlockCoordFromCell(coord);
     const blockKey = this.getBlockKey(blockCoord);
-    const block = this.blocks.get(blockKey);
     
-    if (block?.isLocked) {
+    if (this.lockedBlocks.has(blockKey)) {
       return cellsRevealed;
     }
     
@@ -437,9 +461,8 @@ export class InfiniteGridManager {
     // Check if the cell is in a locked block
     const blockCoord = this.getBlockCoordFromCell(coord);
     const blockKey = this.getBlockKey(blockCoord);
-    const block = this.blocks.get(blockKey);
     
-    if (block?.isLocked) {
+    if (this.lockedBlocks.has(blockKey)) {
       return false;
     }
     
@@ -477,9 +500,8 @@ export class InfiniteGridManager {
     // Check if the cell is in a locked block
     const blockCoord = this.getBlockCoordFromCell(coord);
     const blockKey = this.getBlockKey(blockCoord);
-    const block = this.blocks.get(blockKey);
     
-    if (block?.isLocked) {
+    if (this.lockedBlocks.has(blockKey)) {
       return { cellsRevealed: 0, hitMine };
     }
     
@@ -527,18 +549,10 @@ export class InfiniteGridManager {
     exploredBlocks: number,
     lockedBlocks: number
   } {
-    let exploredBlocks = 0;
-    let lockedBlocks = 0;
-    
-    for (const block of this.blocks.values()) {
-      if (block.isExplored) exploredBlocks++;
-      if (block.isLocked) lockedBlocks++;
-    }
-    
     return {
       totalBlocks: this.blocks.size,
-      exploredBlocks,
-      lockedBlocks
+      exploredBlocks: this.exploredBlocks.size,
+      lockedBlocks: this.lockedBlocks.size
     };
   }
 }
