@@ -1,22 +1,24 @@
+
 export enum CellState {
-  UNREVEALED = "unrevealed",
-  REVEALED = "revealed",
-  FLAGGED = "flagged",
-  QUESTION = "question"
+  UNREVEALED,
+  REVEALED,
+  FLAGGED,
+  QUESTION
 }
 
 export enum GameState {
-  NOT_STARTED = "not_started",
-  IN_PROGRESS = "in_progress",
-  WON = "won",
-  LOST = "lost"
+  NOT_STARTED,
+  IN_PROGRESS,
+  WON,
+  LOST
 }
 
 export enum Difficulty {
-  BEGINNER = "beginner",
-  INTERMEDIATE = "intermediate",
-  EXPERT = "expert",
-  INFINITE = "infinite"
+  BEGINNER = "BEGINNER",
+  INTERMEDIATE = "INTERMEDIATE",
+  EXPERT = "EXPERT",
+  CUSTOM = "CUSTOM",
+  INFINITE = "INFINITE"
 }
 
 export type DifficultyConfig = {
@@ -45,6 +47,12 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
     mines: 99,
     multiplier: 2
   },
+  [Difficulty.CUSTOM]: {
+    rows: 10,
+    cols: 10,
+    mines: 15,
+    multiplier: 1
+  },
   [Difficulty.INFINITE]: {
     rows: 20,
     cols: 20,
@@ -59,7 +67,6 @@ export interface Cell {
   adjacentMines: number;
   row: number;
   col: number;
-  isSuggested?: boolean;
 }
 
 export interface CellCoordinate {

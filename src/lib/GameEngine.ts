@@ -82,54 +82,6 @@ export class GameEngine {
     this.gridManager.reset(this.config.rows, this.config.cols, this.config.mines);
   }
 
-  // Generate suggestions for border cells around revealed cells
-  public generateSuggestions(): void {
-    // Only generate suggestions if the game is in progress
-    if (this.gameState !== GameState.IN_PROGRESS) {
-      return;
-    }
-    
-    // Clear any existing suggestions
-    this.clearAllSuggestions();
-    
-    const grid = this.gridManager.getGrid();
-    const rows = this.config.rows;
-    const cols = this.config.cols;
-    
-    // Find border cells (unrevealed cells adjacent to revealed cells)
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        // Skip revealed or flagged cells
-        if (grid[row][col].state !== CellState.UNREVEALED) {
-          continue;
-        }
-        
-        // Check if this is a border cell (adjacent to any revealed cell)
-        let isBorder = false;
-        for (let r = Math.max(0, row - 1); r <= Math.min(rows - 1, row + 1); r++) {
-          for (let c = Math.max(0, col - 1); c <= Math.min(cols - 1, col + 1); c++) {
-            if (r === row && c === col) continue;
-            if (grid[r][c].state === CellState.REVEALED) {
-              isBorder = true;
-              break;
-            }
-          }
-          if (isBorder) break;
-        }
-        
-        // If it's a border cell, mark it as suggested
-        if (isBorder) {
-          this.gridManager.setSuggestion(row, col, true);
-        }
-      }
-    }
-  }
-  
-  // Clear all suggestions
-  public clearAllSuggestions(): void {
-    this.gridManager.clearAllSuggestions();
-  }
-
   // PUBLIC METHODS
 
   // Get the current grid
@@ -190,9 +142,6 @@ export class GameEngine {
       this.stats.cellsRevealed++;
     }
     
-    // Clear any suggestions after a move
-    this.clearAllSuggestions();
-    
     // Check victory
     if (this.checkVictory()) {
       this.gameState = GameState.WON;
@@ -243,9 +192,6 @@ export class GameEngine {
         cell.state = CellState.UNREVEALED;
         break;
     }
-    
-    // Clear any suggestions after flagging
-    this.clearAllSuggestions();
   }
 
   // Chord (middle-click) functionality - reveal adjacent cells when a numbered cell has correct flags
@@ -260,7 +206,7 @@ export class GameEngine {
     }
     
     // Only allow chording on in-progress games
-    if (this.gameState !== GameState.IN_PROGRESS) {
+    if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
       return;
     }
     
@@ -302,9 +248,6 @@ export class GameEngine {
         }
       }
     }
-    
-    // Clear any suggestions after chording
-    this.clearAllSuggestions();
   }
 
   // Calculate score based on time and difficulty

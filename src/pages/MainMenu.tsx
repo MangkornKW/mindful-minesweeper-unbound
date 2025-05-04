@@ -7,13 +7,10 @@ import DifficultySelector from "@/components/DifficultySelector";
 import { Difficulty } from "@/types/game";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { Bomb, Moon, Sun } from "lucide-react";
-import LoginButton from "@/components/LoginButton";
-import { useAuth } from "@/contexts/AuthContext";
 
 const MainMenu: React.FC = () => {
   const navigate = useNavigate();
   const { settings, toggleDarkMode } = useSettings();
-  const { user } = useAuth();
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(Difficulty.BEGINNER);
   const [showTutorial, setShowTutorial] = useState(false);
   
@@ -40,8 +37,7 @@ const MainMenu: React.FC = () => {
         />
       )}
       
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <LoginButton />
+      <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
           size="icon"
@@ -100,7 +96,6 @@ const MainMenu: React.FC = () => {
       
       <div className="mt-12 text-xs text-muted-foreground">
         © 2025 Minesweeper App
-        {user && <span> | Signed in as {user.user_metadata.name || user.email}</span>}
       </div>
     </div>
   );

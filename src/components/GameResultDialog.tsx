@@ -13,61 +13,20 @@ import {
 } from "@/components/ui/dialog";
 import { Trophy, AlertCircle, RefreshCw, Home, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const GameResultDialog: React.FC = () => {
   const { gameState, gameResult, restartGame } = useGame();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [open, setOpen] = React.useState(false);
-  const [isSaving, setIsSaving] = React.useState(false);
   
   // Show dialog when game is over
   React.useEffect(() => {
     if (gameState === GameState.WON || gameState === GameState.LOST) {
       setOpen(true);
-      
-      // If user is logged in and game is won, save the score
-      if (user && gameState === GameState.WON && gameResult) {
-        saveScore();
-      }
     } else {
       setOpen(false);
     }
   }, [gameState]);
-  
-  // Save score to Supabase
-  const saveScore = async () => {
-    if (!gameResult || !user) return;
-    
-    try {
-      setIsSaving(true);
-      
-      const { error } = await supabase
-        .from('leaderboard')
-        .insert({
-          user_id: user.id,
-          player_name: user.user_metadata.name || user.email?.split('@')[0] || 'Anonymous',
-          score: gameResult.score,
-          difficulty: gameResult.difficulty,
-          elapsed_time: gameResult.elapsedTime,
-        });
-        
-      if (error) {
-        console.error("Error saving score:", error);
-        toast.error("Failed to save your score to the leaderboard");
-      } else {
-        toast.success("Your score has been saved to the leaderboard!");
-      }
-    } catch (error) {
-      console.error("Unexpected error saving score:", error);
-      toast.error("An unexpected error occurred while saving your score");
-    } finally {
-      setIsSaving(false);
-    }
-  };
   
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -94,7 +53,7 @@ const GameResultDialog: React.FC = () => {
     } else {
       // Fallback - copy to clipboard
       navigator.clipboard.writeText(message)
-        .then(() => toast.success('Score copied to clipboard!'))
+        .then(() => alert('Score copied to clipboard!'))
         .catch((error) => console.log('Error copying:', error));
     }
   };
@@ -140,19 +99,6 @@ const GameResultDialog: React.FC = () => {
             <div className="text-sm text-muted-foreground">
               Difficulty: {gameResult.difficulty}
             </div>
-            
-            {!user && gameResult.victory && (
-              <div className="text-sm text-amber-500 mt-2">
-                Sign in to save your score to the leaderboard!
-              </div>
-            )}
-            
-            {isSaving && (
-              <div className="text-sm text-blue-500 flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Saving your score...
-              </div>
-            )}
           </div>
         </div>
         

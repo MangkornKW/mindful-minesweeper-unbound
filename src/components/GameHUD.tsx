@@ -9,14 +9,13 @@ import {
   RefreshCw,
   Home,
   Pause,
-  Play,
-  BorderOuter
+  Play
 } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useNavigate } from "react-router-dom";
 
 const GameHUD: React.FC = () => {
-  const { stats, gameState, restartGame, generateSuggestions } = useGame();
+  const { stats, gameState, restartGame } = useGame();
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [isPaused, setIsPaused] = React.useState(false);
@@ -39,11 +38,6 @@ const GameHUD: React.FC = () => {
     navigate('/');
   };
   
-  // Handle suggestion button click
-  const handleSuggestion = () => {
-    generateSuggestions();
-  };
-  
   return (
     <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 flex justify-between items-center">
       <div className="flex items-center">
@@ -52,17 +46,6 @@ const GameHUD: React.FC = () => {
       </div>
       
       <div className="flex items-center space-x-2">
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={handleSuggestion}
-          className="h-8 w-8"
-          title="Get suggestions"
-          disabled={gameState !== GameState.IN_PROGRESS}
-        >
-          <BorderOuter size={16} />
-        </Button>
-        
         <Button 
           variant="outline" 
           size="icon"
