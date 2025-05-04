@@ -1,3 +1,4 @@
+
 import { 
   Cell, 
   CellState, 
@@ -240,8 +241,7 @@ export class GameEngine {
   // Toggle flag on a cell
   toggleFlag(row: number, col: number): void {
     // Ignore if game is over
-    if (!this.isInfiniteMode && 
-        (this.gameState === GameState.WON || this.gameState === GameState.LOST)) {
+    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
       return;
     }
     
@@ -294,8 +294,7 @@ export class GameEngine {
   // Chord (middle-click) functionality
   chordCell(row: number, col: number): void {
     // Ignore if game is over
-    if (!this.isInfiniteMode && 
-        (this.gameState === GameState.WON || this.gameState === GameState.LOST)) {
+    if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
       return;
     }
     
@@ -400,12 +399,9 @@ export class GameEngine {
   cleanup(): void {
     this.timerManager.cleanup();
   }
-
-  // Check if game is lost - needs to handle both standard and infinite modes
+  
+  // Check if game is lost or won
   private checkGameOver(): boolean {
-    if (this.gameState === GameState.LOST || this.gameState === GameState.WON) {
-      return true;
-    }
-    return false;
+    return this.gameState === GameState.LOST || this.gameState === GameState.WON;
   }
 }
