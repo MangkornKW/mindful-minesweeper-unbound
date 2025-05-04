@@ -1,4 +1,3 @@
-
 import { 
   Cell, 
   CellState, 
@@ -190,11 +189,11 @@ export class GameEngine {
       }
     } else {
       // For standard modes, use the regular grid manager
-      const grid = (this.gridManager as GridManager).getGrid();
-      if (!this.gridManager.isValidCoord(row, col)) {
+      if (!this.isValidCoordForCurrentMode(row, col)) {
         return;
       }
       
+      const grid = (this.gridManager as GridManager).getGrid();
       const cell = grid[row][col];
       
       // Ignore if cell is already revealed or flagged
@@ -229,9 +228,18 @@ export class GameEngine {
     }
   }
 
+  // Helper to check if coordinates are valid for current mode
+  private isValidCoordForCurrentMode(row: number, col: number): boolean {
+    if (this.isInfiniteMode) {
+      return (this.gridManager as InfiniteGridManager).isValidCoord(row, col);
+    } else {
+      return (this.gridManager as GridManager).isValidCoord(row, col);
+    }
+  }
+
   // Toggle flag on a cell
   toggleFlag(row: number, col: number): void {
-    // Ignore if game is over or not in infinite mode
+    // Ignore if game is over
     if (!this.isInfiniteMode && 
         (this.gameState === GameState.WON || this.gameState === GameState.LOST)) {
       return;
@@ -248,7 +256,7 @@ export class GameEngine {
       (this.gridManager as InfiniteGridManager).toggleFlag({ row, col });
     } else {
       // Standard mode
-      if (!this.gridManager.isValidCoord(row, col)) {
+      if (!this.isValidCoordForCurrentMode(row, col)) {
         return;
       }
       
@@ -301,7 +309,7 @@ export class GameEngine {
       const result = (this.gridManager as InfiniteGridManager).chordCell({ row, col });
     } else {
       // Standard mode
-      if (!this.gridManager.isValidCoord(row, col)) {
+      if (!this.isValidCoordForCurrentMode(row, col)) {
         return;
       }
       

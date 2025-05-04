@@ -1,3 +1,4 @@
+
 import { 
   Cell, 
   CellState, 
@@ -14,6 +15,7 @@ export class InfiniteGridManager {
   private baseMinePercent: number = 0.15; // Starting mine density
   private onCellRevealed: () => void;
   private onFlagToggled: (increment: boolean) => void;
+  private processingBlocks: Set<string>; // Track blocks being processed to prevent recursion
 
   constructor(
     initialViewportRows: number, 
@@ -29,9 +31,16 @@ export class InfiniteGridManager {
     };
     this.onCellRevealed = onCellRevealed;
     this.onFlagToggled = onFlagToggled;
+    this.processingBlocks = new Set(); // Initialize set to track blocks in processing
     
     // Initialize the visible blocks
     this.ensureViewportBlocksExist();
+  }
+  
+  // Check if coordinate is valid
+  public isValidCoord(row: number, col: number): boolean {
+    // In infinite mode, all coordinates are technically valid
+    return row >= 0 && col >= 0;
   }
   
   // Get block key for Map storage
@@ -57,6 +66,32 @@ export class InfiniteGridManager {
   
   // Create a new block at the specified coordinates
   private createBlock(blockCoord: BlockCoordinate): InfiniteBlock {
+    const blockKey = this.getBlockKey(blockCoord);
+    
+    // Check if this block is already being processed (to break recursion)
+    if (this.processingBlocks.has(blockKey)) {
+      // Return a temporary block with no mines to break the recursion
+      const tempBlock: InfiniteBlock = {
+        coordinate: {...blockCoord},
+        cells: Array(this.blockSize).fill(null).map((_, r) => 
+          Array(this.blockSize).fill(null).map((_, c) => ({
+            isMine: false,
+            state: CellState.UNREVEALED,
+            adjacentMines: 0,
+            row: blockCoord.blockRow * this.blockSize + r,
+            col: blockCoord.blockCol * this.blockSize + c
+          }))
+        ),
+        isLocked: false,
+        isExplored: false,
+        difficulty: 0
+      };
+      return tempBlock;
+    }
+    
+    // Mark this block as being processed
+    this.processingBlocks.add(blockKey);
+    
     const { startRow, startCol } = this.getBlockCellRange(blockCoord);
     
     // Calculate difficulty based on distance from origin
@@ -89,7 +124,7 @@ export class InfiniteGridManager {
     
     // Create block
     const block: InfiniteBlock = {
-      coordinate: blockCoord,
+      coordinate: {...blockCoord},
       cells,
       isLocked: false,
       isExplored: false,
@@ -98,6 +133,9 @@ export class InfiniteGridManager {
     
     // Calculate adjacent mines for all cells in this block
     this.calculateAdjacentMinesForBlock(block);
+    
+    // Remove the block from processing
+    this.processingBlocks.delete(blockKey);
     
     return block;
   }
@@ -124,6 +162,20 @@ export class InfiniteGridManager {
             // If we're looking outside the current block
             if (checkRow < 0 || checkRow >= this.blockSize || 
                 checkCol < 0 || checkCol >= this.blockSize) {
+              
+              // Get block coordinates for this cell
+              const neighborBlockCoord = this.getBlockCoordFromCell({
+                row: absoluteRow,
+                col: absoluteCol
+              });
+              
+              // Check if we're processing this block to avoid recursion
+              const neighborBlockKey = this.getBlockKey(neighborBlockCoord);
+              if (this.processingBlocks.has(neighborBlockKey)) {
+                // Skip this check to break the recursion
+                continue;
+              }
+              
               const neighborCell = this.getCellAt({ row: absoluteRow, col: absoluteCol });
               if (neighborCell?.isMine) count++;
             } else {
