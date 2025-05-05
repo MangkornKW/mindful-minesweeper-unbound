@@ -1,18 +1,77 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import GameCell from "@/components/GameCell";
 import { useGame } from "@/contexts/GameContext";
 import { Flag, Unlock, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Difficulty, Cell } from "@/types/game";
 
 const GameBoard: React.FC = () => {
-  const { grid, revealCell, toggleFlag, chordCell } = useGame();
+  const { grid, revealCell, toggleFlag, chordCell, difficulty } = useGame();
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [visibleBlocks, setVisibleBlocks] = useState<Record<string, boolean>>({});
   const boardRef = useRef<HTMLDivElement>(null);
+  const lastViewportCheck = useRef<{ x: number, y: number, scale: number }>({ x: 0, y: 0, scale: 1 });
+  
+  // Track visible viewport for infinite mode
+  useEffect(() => {
+    if (difficulty !== Difficulty.INFINITE) return;
+    
+    // Check if we need to generate new blocks based on viewport
+    const checkViewport = () => {
+      const currentView = {
+        x: position.x,
+        y: position.y,
+        scale
+      };
+      
+      // Only check if viewport has moved significantly
+      const xDiff = Math.abs(currentView.x - lastViewportCheck.current.x);
+      const yDiff = Math.abs(currentView.y - lastViewportCheck.current.y);
+      const scaleDiff = Math.abs(currentView.scale - lastViewportCheck.current.scale);
+      
+      if (xDiff > 50 || yDiff > 50 || scaleDiff > 0.1) {
+        // This would call the InfiniteGridManager.checkViewport method
+        // For now, we'll just update visible blocks for demonstration
+        const newVisibleBlocks: Record<string, boolean> = {};
+        
+        // Calculate which blocks should be visible (3x3 grid around center)
+        const blockSize = 8 * 24; // 8 cells × 24px per cell
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // How many blocks fit in viewport
+        const visibleBlocksX = Math.ceil(viewportWidth / (blockSize * scale)) + 2; // +2 for buffer
+        const visibleBlocksY = Math.ceil(viewportHeight / (blockSize * scale)) + 2;
+        
+        // Center block coordinates
+        const centerBlockX = Math.floor(-position.x / (blockSize * scale));
+        const centerBlockY = Math.floor(-position.y / (blockSize * scale));
+        
+        // Generate blocks in viewport
+        for (let r = centerBlockY - visibleBlocksY; r <= centerBlockY + visibleBlocksY; r++) {
+          for (let c = centerBlockX - visibleBlocksX; c <= centerBlockX + visibleBlocksX; c++) {
+            newVisibleBlocks[`${r},${c}`] = true;
+          }
+        }
+        
+        setVisibleBlocks(newVisibleBlocks);
+        lastViewportCheck.current = currentView;
+        
+        console.log(`Visible blocks updated. Center: (${centerBlockX}, ${centerBlockY})`);
+      }
+    };
+    
+    checkViewport();
+    
+    // Also check viewport after user interactions
+    const interval = setInterval(checkViewport, 500);
+    
+    return () => clearInterval(interval);
+  }, [position, scale, difficulty]);
   
   // Handle zooming with mouse wheel or buttons
   const handleZoom = (delta: number) => {
@@ -91,7 +150,7 @@ const GameBoard: React.FC = () => {
   };
   
   // Render a block of cells (8x8)
-  const renderBlock = (blockRow: number, blockCol: number, cells: any[][], blockSize: number = 8) => {
+  const renderBlock = (blockRow: number, blockCol: number, cells: Cell[][], blockSize: number = 8) => {
     const startRow = blockRow * blockSize;
     const startCol = blockCol * blockSize;
     const blockCells = [];
@@ -123,45 +182,87 @@ const GameBoard: React.FC = () => {
       );
     }
     
+    // Is this block locked? (would be determined by InfiniteGridManager)
+    const isLocked = false;
+    
     return (
       <div 
         className="block relative bg-gray-200 dark:bg-gray-800 rounded-md m-1 overflow-hidden"
         key={`block-${blockRow}-${blockCol}`}
+        data-block-row={blockRow}
+        data-block-col={blockCol}
       >
         {blockCells}
         
-        {/* Block overlay for locked state would go here - to be implemented with InfiniteGridManager */}
-        {false && (
+        {/* Block overlay for locked state */}
+        {isLocked && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <Unlock className="text-white" size={24} />
+            <Button variant="outline" size="sm" className="bg-primary/80 text-white border-none">
+              <Unlock className="mr-1" size={16} />
+              Unlock
+            </Button>
           </div>
         )}
       </div>
     );
   };
   
-  // Calculate how many blocks to render based on the grid size
+  // Calculate how many blocks to render based on the grid size or visible blocks for infinite mode
   const renderBlocks = () => {
     if (!grid || !grid.length) return null;
     
-    const blockSize = 8; // Each block is 8x8 cells
-    const numRows = Math.ceil(grid.length / blockSize);
-    const numCols = Math.ceil(grid[0].length / blockSize);
-    const blocks = [];
-    
-    for (let r = 0; r < numRows; r++) {
-      const blockRow = [];
-      for (let c = 0; c < numCols; c++) {
-        blockRow.push(renderBlock(r, c, grid, blockSize));
+    if (difficulty === Difficulty.INFINITE) {
+      // Render blocks based on visible viewport
+      const blockKeys = Object.keys(visibleBlocks);
+      const blocks = [];
+      
+      // Sort blocks by row for proper rendering
+      const blocksByRow: Record<number, { row: number, col: number }[]> = {};
+      
+      blockKeys.forEach(key => {
+        const [row, col] = key.split(',').map(Number);
+        if (!blocksByRow[row]) blocksByRow[row] = [];
+        blocksByRow[row].push({ row, col });
+      });
+      
+      // Sort rows and render blocks
+      Object.keys(blocksByRow).sort((a, b) => Number(a) - Number(b)).forEach(rowKey => {
+        const rowBlocks = blocksByRow[Number(rowKey)].sort((a, b) => a.col - b.col);
+        const blockRow = [];
+        
+        rowBlocks.forEach(({ row, col }) => {
+          blockRow.push(renderBlock(row, col, grid, 8));
+        });
+        
+        blocks.push(
+          <div key={`block-container-row-${rowKey}`} className="flex">
+            {blockRow}
+          </div>
+        );
+      });
+      
+      return blocks;
+    } else {
+      // Standard mode - fixed grid
+      const blockSize = 8; // Each block is 8x8 cells
+      const numRows = Math.ceil(grid.length / blockSize);
+      const numCols = Math.ceil(grid[0].length / blockSize);
+      const blocks = [];
+      
+      for (let r = 0; r < numRows; r++) {
+        const blockRow = [];
+        for (let c = 0; c < numCols; c++) {
+          blockRow.push(renderBlock(r, c, grid, blockSize));
+        }
+        blocks.push(
+          <div key={`block-container-row-${r}`} className="flex">
+            {blockRow}
+          </div>
+        );
       }
-      blocks.push(
-        <div key={`block-container-row-${r}`} className="flex">
-          {blockRow}
-        </div>
-      );
+      
+      return blocks;
     }
-    
-    return blocks;
   };
   
   return (
@@ -215,6 +316,13 @@ const GameBoard: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Info text for infinite mode */}
+      {difficulty === Difficulty.INFINITE && (
+        <div className="text-sm text-muted-foreground mt-2">
+          Pan and zoom to explore. Blocks get harder the further you go!
+        </div>
+      )}
     </div>
   );
 };
