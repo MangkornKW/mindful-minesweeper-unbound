@@ -54,9 +54,9 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
     multiplier: 1
   },
   [Difficulty.INFINITE]: {
-    rows: 20,
-    cols: 20,
-    mines: 60, // Initial visible area
+    rows: 24, // Initially visible area (3 blocks of 8x8)
+    cols: 24, // Initially visible area (3 blocks of 8x8)
+    mines: 60, // Initial mine count
     multiplier: 3
   }
 };
@@ -72,6 +72,18 @@ export interface Cell {
 export interface CellCoordinate {
   row: number;
   col: number;
+}
+
+export interface BlockCoordinate {
+  blockRow: number;
+  blockCol: number;
+}
+
+export interface Block {
+  coordinate: BlockCoordinate;
+  cells: Cell[][];
+  isLocked: boolean;
+  distance: number; // Distance from origin for difficulty calculation
 }
 
 export interface GameConfig {
@@ -120,4 +132,9 @@ export interface InfiniteGameState {
   revealedCells: CellCoordinate[];
   flaggedCells: CellCoordinate[];
   elapsedTime: number;
+  gems: number;
+  unlockedBlocks: BlockCoordinate[];
+  lockedBlocks: BlockCoordinate[];
+  viewportPosition: { x: number, y: number };
+  zoom: number;
 }

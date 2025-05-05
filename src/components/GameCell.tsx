@@ -103,12 +103,12 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
       case CellState.UNREVEALED:
         return null;
       case CellState.FLAGGED:
-        return <FlagIcon className="w-4 h-4" />;
+        return <FlagIcon className="w-3 h-3" />;
       case CellState.QUESTION:
-        return <HelpCircleIcon className="w-4 h-4" />;
+        return <HelpCircleIcon className="w-3 h-3" />;
       case CellState.REVEALED:
         if (cell.isMine) {
-          return <BombIcon className="w-4 h-4" />;
+          return <BombIcon className="w-3 h-3" />;
         }
         return cell.adjacentMines > 0 ? cell.adjacentMines : null;
     }
@@ -154,6 +154,8 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
     <div
       className={cn(
         getCellClass(),
+        "w-6 h-6 flex items-center justify-center border border-gray-400 dark:border-gray-600 text-xs sm:text-sm font-semibold select-none",
+        cell.state === CellState.REVEALED ? "bg-gray-100 dark:bg-gray-700" : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500",
         isAnimating && "animate-reveal-tile",
         isLongPressing && "scale-95"
       )}

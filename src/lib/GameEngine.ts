@@ -1,3 +1,4 @@
+
 import { 
   Cell, 
   CellState, 
@@ -206,6 +207,7 @@ export class GameEngine {
     }
     
     // Only allow chording on in-progress games
+    // Fix the comparison here - use separate conditions
     if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
       return;
     }

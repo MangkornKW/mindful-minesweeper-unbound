@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import GameBoard from "@/components/GameBoard";
@@ -9,9 +9,9 @@ import { Difficulty } from "@/types/game";
 
 // Wrapper component to use game context
 const GamePageContent: React.FC = () => {
+  const { startNewGame } = useGame();
   const location = useLocation();
   const navigate = useNavigate();
-  const { startNewGame } = useGame();
   
   // Initialize game on mount, only once
   useEffect(() => {
@@ -21,9 +21,7 @@ const GamePageContent: React.FC = () => {
     
     // Start a new game with the selected difficulty
     startNewGame(difficulty);
-    
-    // Don't include startNewGame in dependencies to prevent infinite rendering
-  }, [location.state]); // Only re-run if location state changes
+  }, [location.state, startNewGame]); // Include startNewGame in dependencies
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted">
