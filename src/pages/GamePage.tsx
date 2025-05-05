@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import GameBoard from "@/components/GameBoard";
@@ -17,7 +17,7 @@ const GamePageContent: React.FC = () => {
   useEffect(() => {
     // Get difficulty from location state, or default to Beginner
     const state = location.state as { difficulty: Difficulty } | undefined;
-    const difficulty = state?.difficulty || Difficulty.BEGINNER;
+    const difficulty = state?.difficulty || Difficulty.INFINITE; // Default to Infinite for the infinite mode
     
     // Start a new game with the selected difficulty
     startNewGame(difficulty);

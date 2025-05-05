@@ -36,3 +36,22 @@ export interface IGridManager {
   calculateAdjacentMines: () => void;
   reset: (rows: number, cols: number, mines: number) => void;
 }
+
+// New types for infinite mode
+export interface BlockCoordinate {
+  x: number;
+  y: number;
+}
+
+export interface GameBlock {
+  coord: BlockCoordinate;
+  cells: Cell[][];
+  isLocked: boolean;
+  distanceFromCenter: number;
+}
+
+export interface ViewportState {
+  x: number;
+  y: number;
+  zoom: number;
+}
