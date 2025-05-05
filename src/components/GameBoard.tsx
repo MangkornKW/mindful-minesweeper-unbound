@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import GameCell from "@/components/GameCell";
 import { useGame } from "@/contexts/GameContext";
@@ -156,13 +157,15 @@ const GameBoard: React.FC = () => {
     const blockCells = [];
     
     // Get cells for this block (8x8)
-    for (let r = 0; r < blockSize && startRow + r < cells.length; r++) {
+    for (let r = 0; r < blockSize; r++) {
       const rowCells = [];
-      for (let c = 0; c < blockSize && startCol + c < cells[0].length; c++) {
+      for (let c = 0; c < blockSize; c++) {
         const actualRow = startRow + r;
         const actualCol = startCol + c;
         
-        if (actualRow < cells.length && actualCol < cells[0].length) {
+        // Fix: Check if the cell exists before accessing it
+        if (actualRow >= 0 && actualRow < cells.length && 
+            actualCol >= 0 && actualCol < cells[0].length) {
           const cell = cells[actualRow][actualCol];
           rowCells.push(
             <GameCell
@@ -245,6 +248,9 @@ const GameBoard: React.FC = () => {
     } else {
       // Standard mode - fixed grid
       const blockSize = 8; // Each block is 8x8 cells
+      // Fix: Ensure grid and grid[0] exist before accessing length
+      if (!grid || !grid.length || !grid[0]) return null;
+      
       const numRows = Math.ceil(grid.length / blockSize);
       const numCols = Math.ceil(grid[0].length / blockSize);
       const blocks = [];

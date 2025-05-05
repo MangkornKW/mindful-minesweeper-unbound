@@ -29,19 +29,17 @@ const GamePageContent: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted">
       <GameHUD />
       
-      {/* Add minimap toggle button for infinite mode */}
-      {difficulty === Difficulty.INFINITE && (
-        <div className="absolute top-20 right-4 z-20">
-          <button 
-            onClick={() => setShowMinimap(prev => !prev)}
-            className="bg-primary text-primary-foreground p-2 rounded-md mb-2"
-          >
-            {showMinimap ? "Hide Minimap" : "Show Minimap"}
-          </button>
-          
-          {showMinimap && <GameMinimap />}
-        </div>
-      )}
+      {/* Add minimap toggle button for all difficulties */}
+      <div className="absolute top-20 right-4 z-20">
+        <button 
+          onClick={() => setShowMinimap(prev => !prev)}
+          className="bg-primary text-primary-foreground p-2 rounded-md mb-2"
+        >
+          {showMinimap ? "Hide Minimap" : "Show Minimap"}
+        </button>
+        
+        {showMinimap && <GameMinimap />}
+      </div>
       
       <GameBoard />
       <GameResultDialog />
