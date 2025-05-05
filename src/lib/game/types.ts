@@ -6,23 +6,14 @@ import {
   GameStats, 
   Difficulty, 
   DifficultyConfig,
-  CellState,
-  BlockCoordinate,
-  InfiniteBlock
+  CellState
 } from "@/types/game";
 
 // Re-export enums directly so they can be used as types AND values
 export { CellState, GameState, Difficulty };
 
 // Re-export other types with the 'export type' syntax for isolated modules
-export type { 
-  Cell, 
-  CellCoordinate, 
-  GameStats, 
-  DifficultyConfig,
-  BlockCoordinate,
-  InfiniteBlock
-};
+export type { Cell, CellCoordinate, GameStats, DifficultyConfig };
 
 export interface ITimerManager {
   startTimer: () => void;

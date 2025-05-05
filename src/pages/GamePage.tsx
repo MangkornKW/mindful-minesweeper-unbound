@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import GameBoard from "@/components/GameBoard";
@@ -7,13 +7,13 @@ import GameHUD from "@/components/GameHUD";
 import GameResultDialog from "@/components/GameResultDialog";
 import { Difficulty } from "@/types/game";
 
-// GamePageContent must be inside the GameProvider
+// Wrapper component to use game context
 const GamePageContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { startNewGame } = useGame();
   
-  // Initialize game on mount
+  // Initialize game on mount, only once
   useEffect(() => {
     // Get difficulty from location state, or default to Beginner
     const state = location.state as { difficulty: Difficulty } | undefined;
@@ -22,7 +22,8 @@ const GamePageContent: React.FC = () => {
     // Start a new game with the selected difficulty
     startNewGame(difficulty);
     
-  }, [location.state, startNewGame]); // Add startNewGame to dependencies
+    // Don't include startNewGame in dependencies to prevent infinite rendering
+  }, [location.state]); // Only re-run if location state changes
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted">
@@ -42,7 +43,7 @@ const GamePageContent: React.FC = () => {
   );
 };
 
-// Main component with provider - ensure GamePageContent is wrapped with GameProvider
+// Main component with provider
 const GamePage: React.FC = () => {
   return (
     <GameProvider>

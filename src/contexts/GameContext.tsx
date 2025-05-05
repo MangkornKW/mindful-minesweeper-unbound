@@ -25,7 +25,6 @@ interface GameContextType {
   startNewGame: (difficulty: Difficulty, customConfig?: Partial<DifficultyConfig>) => void;
   restartGame: () => void;
   gameResult: GameResult | null;
-  panViewport: (direction: 'up' | 'down' | 'left' | 'right') => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -108,14 +107,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShouldUpdateState(true);
   }, [gameEngine]);
   
-  // Pan viewport (for infinite mode)
-  const panViewport = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (difficulty === Difficulty.INFINITE) {
-      gameEngine.panViewport(direction);
-      setShouldUpdateState(true);
-    }
-  }, [gameEngine, difficulty]);
-  
   // Start a new game
   const startNewGame = useCallback((newDifficulty: Difficulty, customConfig?: Partial<DifficultyConfig>) => {
     // Reset the game engine with new difficulty
@@ -156,9 +147,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     chordCell,
     startNewGame,
     restartGame,
-    gameResult,
-    panViewport
-  }), [grid, gameState, stats, difficulty, revealCell, toggleFlag, chordCell, startNewGame, restartGame, gameResult, panViewport]);
+    gameResult
+  }), [grid, gameState, stats, difficulty, revealCell, toggleFlag, chordCell, startNewGame, restartGame, gameResult]);
   
   return (
     <GameContext.Provider value={contextValue}>
