@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GameProvider, useGame } from "@/contexts/GameContext";
@@ -17,13 +16,11 @@ const GamePageContent: React.FC = () => {
   useEffect(() => {
     // Get difficulty from location state, or default to Beginner
     const state = location.state as { difficulty: Difficulty } | undefined;
-    const difficulty = state?.difficulty || Difficulty.INFINITE; // Default to Infinite for the infinite mode
+    const difficulty = state?.difficulty || Difficulty.BEGINNER;
     
     // Start a new game with the selected difficulty
     startNewGame(difficulty);
-    
-    // Don't include startNewGame in dependencies to prevent infinite rendering
-  }, [location.state]); // Only re-run if location state changes
+  }, [location.state, startNewGame]);
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted">

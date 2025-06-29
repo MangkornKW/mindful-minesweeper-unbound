@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ const MOCK_LEADERBOARD_DATA = {
   [Difficulty.EXPERT]: [
     { id: 'e1', playerName: 'Player3', score: 3200, difficulty: Difficulty.EXPERT, elapsedTime: 382, date: new Date(2023, 4, 8) },
   ],
-  [Difficulty.INFINITE]: []
+  [Difficulty.CUSTOM]: []
 };
 
 const LeaderboardPage: React.FC = () => {
@@ -54,7 +53,7 @@ const LeaderboardPage: React.FC = () => {
             <TabsTrigger value={Difficulty.BEGINNER}>Beginner</TabsTrigger>
             <TabsTrigger value={Difficulty.INTERMEDIATE}>Intermediate</TabsTrigger>
             <TabsTrigger value={Difficulty.EXPERT}>Expert</TabsTrigger>
-            <TabsTrigger value={Difficulty.INFINITE}>Infinite</TabsTrigger>
+            <TabsTrigger value={Difficulty.CUSTOM}>Custom</TabsTrigger>
           </TabsList>
           
           <TabsContent value={Difficulty.BEGINNER}>
@@ -78,10 +77,10 @@ const LeaderboardPage: React.FC = () => {
             />
           </TabsContent>
           
-          <TabsContent value={Difficulty.INFINITE}>
+          <TabsContent value={Difficulty.CUSTOM}>
             <LeaderboardTable 
-              entries={MOCK_LEADERBOARD_DATA[Difficulty.INFINITE]} 
-              selectedDifficulty={Difficulty.INFINITE} 
+              entries={MOCK_LEADERBOARD_DATA[Difficulty.CUSTOM]} 
+              selectedDifficulty={Difficulty.CUSTOM} 
             />
           </TabsContent>
         </Tabs>

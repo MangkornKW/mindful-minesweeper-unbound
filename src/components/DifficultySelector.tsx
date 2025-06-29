@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Difficulty, DIFFICULTY_CONFIGS } from "@/types/game";
 import { 
@@ -35,8 +34,8 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({ value, onChange
           <SelectItem value={Difficulty.EXPERT}>
             Expert ({DIFFICULTY_CONFIGS[Difficulty.EXPERT].rows}x{DIFFICULTY_CONFIGS[Difficulty.EXPERT].cols}, {DIFFICULTY_CONFIGS[Difficulty.EXPERT].mines} mines)
           </SelectItem>
-          <SelectItem value={Difficulty.INFINITE}>
-            Infinite Mode
+          <SelectItem value={Difficulty.CUSTOM}>
+            Custom ({DIFFICULTY_CONFIGS[Difficulty.CUSTOM].rows}x{DIFFICULTY_CONFIGS[Difficulty.CUSTOM].cols}, {DIFFICULTY_CONFIGS[Difficulty.CUSTOM].mines} mines)
           </SelectItem>
         </SelectContent>
       </Select>

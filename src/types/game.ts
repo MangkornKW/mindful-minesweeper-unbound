@@ -1,4 +1,3 @@
-
 export enum CellState {
   UNREVEALED,
   REVEALED,
@@ -17,8 +16,7 @@ export enum Difficulty {
   BEGINNER = "BEGINNER",
   INTERMEDIATE = "INTERMEDIATE",
   EXPERT = "EXPERT",
-  CUSTOM = "CUSTOM",
-  INFINITE = "INFINITE"
+  CUSTOM = "CUSTOM"
 }
 
 export type DifficultyConfig = {
@@ -52,12 +50,6 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
     cols: 10,
     mines: 15,
     multiplier: 1
-  },
-  [Difficulty.INFINITE]: {
-    rows: 20,
-    cols: 20,
-    mines: 60, // Initial visible area
-    multiplier: 3
   }
 };
 
@@ -113,11 +105,4 @@ export interface LeaderboardEntry {
   difficulty: Difficulty;
   elapsedTime: number;
   date: Date;
-}
-
-export interface InfiniteGameState {
-  currentSeed: number;
-  revealedCells: CellCoordinate[];
-  flaggedCells: CellCoordinate[];
-  elapsedTime: number;
 }

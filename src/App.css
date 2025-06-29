@@ -1,42 +1,85 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Game Cell Styles */
+.game-cell {
+  @apply w-8 h-8 border border-gray-400 flex items-center justify-center text-sm font-bold cursor-pointer transition-all duration-200 select-none;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.cell-unrevealed {
+  @apply bg-gray-300 hover:bg-gray-200 active:bg-gray-400;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.cell-revealed {
+  @apply bg-gray-100 border-gray-300;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.cell-flagged {
+  @apply bg-yellow-200 text-red-600;
 }
 
-.card {
-  padding: 2em;
+.cell-mine {
+  @apply bg-red-500 text-white;
 }
 
-.read-the-docs {
-  color: #888;
+.cell-number-1 {
+  @apply text-blue-600;
+}
+
+.cell-number-2 {
+  @apply text-green-600;
+}
+
+.cell-number-3 {
+  @apply text-red-600;
+}
+
+.cell-number-4 {
+  @apply text-purple-600;
+}
+
+.cell-number-5 {
+  @apply text-yellow-600;
+}
+
+.cell-number-6 {
+  @apply text-pink-600;
+}
+
+.cell-number-7 {
+  @apply text-black;
+}
+
+.cell-number-8 {
+  @apply text-gray-600;
+}
+
+/* Main Menu Button */
+.main-menu-button {
+  @apply w-64 h-12 text-lg font-semibold;
+}
+
+/* Dark mode styles */
+.dark .cell-unrevealed {
+  @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-800;
+}
+
+.dark .cell-revealed {
+  @apply bg-gray-800 border-gray-600;
+}
+
+.dark .cell-flagged {
+  @apply bg-yellow-800 text-red-400;
+}
+
+/* CSS Variables for animations */
+:root {
+  --unrevealed-bg: theme('colors.gray.300');
+  --revealed-bg: theme('colors.gray.100');
+}
+
+.dark {
+  --unrevealed-bg: theme('colors.gray.700');
+  --revealed-bg: theme('colors.gray.800');
 }
