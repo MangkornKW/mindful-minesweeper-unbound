@@ -4,7 +4,7 @@ import { GameProvider, useGame } from "@/contexts/GameContext";
 import GameBoard from "@/components/GameBoard";
 import GameHUD from "@/components/GameHUD";
 import GameResultDialog from "@/components/GameResultDialog";
-import { Difficulty } from "@/types/game";
+import { Difficulty, DifficultyConfig } from "@/types/game";
 
 // Wrapper component to use game context
 const GamePageContent: React.FC = () => {
@@ -12,14 +12,14 @@ const GamePageContent: React.FC = () => {
   const navigate = useNavigate();
   const { startNewGame } = useGame();
   
-  // Initialize game on mount, only once
+  // Initialize game on mount
   useEffect(() => {
-    // Get difficulty from location state, or default to Beginner
-    const state = location.state as { difficulty: Difficulty } | undefined;
+    // Get difficulty and custom config from navigation state
+    const state = location.state as { difficulty: Difficulty; customConfig?: Partial<DifficultyConfig> } | undefined;
     const difficulty = state?.difficulty || Difficulty.BEGINNER;
+    const customConfig = state?.customConfig;
     
-    // Start a new game with the selected difficulty
-    startNewGame(difficulty);
+    startNewGame(difficulty, customConfig);
   }, [location.state, startNewGame]);
   
   return (

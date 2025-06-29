@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Cell, CellState } from "@/types/game";
 import { cn } from "@/lib/utils";
@@ -10,9 +9,10 @@ interface GameCellProps {
   onReveal: (row: number, col: number) => void;
   onFlag: (row: number, col: number) => void;
   onChord: (row: number, col: number) => void;
+  highlight?: boolean;
 }
 
-const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) => {
+const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord, highlight }) => {
   const { settings } = useSettings();
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -155,7 +155,8 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord }) 
       className={cn(
         getCellClass(),
         isAnimating && "animate-reveal-tile",
-        isLongPressing && "scale-95"
+        isLongPressing && "scale-95",
+        highlight && "ring-4 ring-orange-400 animate-pulse"
       )}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

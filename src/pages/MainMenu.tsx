@@ -1,42 +1,34 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
 import DifficultySelector from "@/components/DifficultySelector";
-import { Difficulty } from "@/types/game";
-import TutorialOverlay from "@/components/TutorialOverlay";
+import { Difficulty, DifficultyConfig } from "@/types/game";
 import { Bomb, Moon, Sun } from "lucide-react";
 
 const MainMenu: React.FC = () => {
   const navigate = useNavigate();
   const { settings, toggleDarkMode } = useSettings();
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(Difficulty.BEGINNER);
-  const [showTutorial, setShowTutorial] = useState(false);
+  const [customConfig, setCustomConfig] = useState<Partial<DifficultyConfig>>({ rows: 10, cols: 10, mines: 15 });
   
   const handlePlay = () => {
-    // If they haven't seen the tutorial, show it first
-    if (!settings.seenTutorial) {
-      setShowTutorial(true);
-    } else {
-      navigate('/game', { state: { difficulty: selectedDifficulty } });
+    if (selectedDifficulty === Difficulty.CUSTOM) {
+      const { rows, cols, mines } = customConfig;
+      if (!rows || !cols || !mines) {
+        alert("Please fill out rows, cols, and mines for custom mode.");
+        return;
+      }
+      if (mines >= rows * cols) {
+        alert("Mines must be fewer than total cells.");
+        return;
+      }
     }
-  };
-  
-  const handleTutorialComplete = () => {
-    setShowTutorial(false);
-    navigate('/game', { state: { difficulty: selectedDifficulty } });
+    navigate('/game', { state: { difficulty: selectedDifficulty, customConfig } });
   };
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted">
-      {showTutorial && (
-        <TutorialOverlay 
-          onComplete={handleTutorialComplete}
-          onSkip={() => setShowTutorial(false)}
-        />
-      )}
-      
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
@@ -61,24 +53,21 @@ const MainMenu: React.FC = () => {
       </div>
       
       <div className="w-full max-w-xs space-y-8">
-        <DifficultySelector value={selectedDifficulty} onChange={setSelectedDifficulty} />
+        <DifficultySelector 
+          value={selectedDifficulty} 
+          onChange={setSelectedDifficulty} 
+          customConfig={customConfig}
+          onCustomConfigChange={setCustomConfig}
+        />
         
         <div className="space-y-4">
-          <Button onClick={handlePlay} className="main-menu-button">
+          <Button onClick={handlePlay} className="w-full h-12 text-lg font-semibold">
             Play Game
           </Button>
           
           <Button
             variant="outline"
-            className="w-64"
-            onClick={() => setShowTutorial(true)}
-          >
-            How to Play
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="w-64"
+            className="w-full"
             onClick={() => navigate('/settings')}
           >
             Settings
@@ -86,10 +75,18 @@ const MainMenu: React.FC = () => {
           
           <Button
             variant="outline"
-            className="w-64"
+            className="w-full"
             onClick={() => navigate('/leaderboard')}
           >
             Leaderboard
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate('/how-to-play')}
+          >
+            How to Play
           </Button>
         </div>
       </div>
