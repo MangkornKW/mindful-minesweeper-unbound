@@ -36,12 +36,21 @@ export class TimerManager implements ITimerManager {
   }
 
   stopTimer(): void {
+    // If the timer is not currently running, simply exit early.
+    if (!this.isRunning) {
+      return;
+    }
+
+    // Capture the elapsed time since the last tick *before* marking the
+    // timer as stopped so that `updateTimer` does not bail out early.
+    this.updateTimer();
+
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
-      this.isRunning = false;
-      this.updateTimer(); // One final update
     }
+
+    this.isRunning = false;
   }
 
   getElapsedTime(): number {
