@@ -246,13 +246,11 @@ export class GameEngine {
     
     // If the number of flags matches the number on the cell, reveal all adjacent non-flagged cells
     if (flagCount === cell.adjacentMines) {
-      let gameEnded = false;
       for (const { row: r, col: c } of adjacentCells) {
         this.revealCell(r, c);
-        
-        // Stop if game is over after revealing a cell
-        if (this.gameState === GameState.WON || this.gameState === GameState.LOST) {
-          gameEnded = true;
+
+        // If revealing this cell ended the game, stop further processing.
+        if (this.gameState !== GameState.IN_PROGRESS && this.gameState !== GameState.NOT_STARTED) {
           break;
         }
       }
