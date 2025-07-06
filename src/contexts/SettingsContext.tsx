@@ -34,8 +34,15 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize settings from local storage or defaults
   const [settings, setSettings] = useState<AppSettings>(() => {
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    return savedSettings ? JSON.parse(savedSettings) : DEFAULT_SETTINGS;
+    try {
+      const savedSettings = typeof window !== "undefined" ? localStorage.getItem(SETTINGS_STORAGE_KEY) : null;
+      if (savedSettings) {
+        return JSON.parse(savedSettings) as AppSettings;
+      }
+    } catch (error) {
+      console.warn("Failed to load persisted settings – using defaults", error);
+    }
+    return DEFAULT_SETTINGS;
   });
 
   // Save settings to local storage when they change

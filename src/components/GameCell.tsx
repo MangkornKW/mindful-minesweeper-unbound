@@ -19,7 +19,7 @@ const GameCell: React.FC<GameCellProps> = ({ cell, onReveal, onFlag, onChord, hi
   
   // Handle long press for flagging
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (isLongPressing) {
       timer = setTimeout(() => {
         onFlag(cell.row, cell.col);

@@ -5,7 +5,7 @@ export class TimerManager implements ITimerManager {
   private startTime: number | null;
   private elapsedTime: number;
   private lastTimerUpdate: number;
-  private timerInterval: NodeJS.Timeout | null;
+  private timerInterval: ReturnType<typeof setTimeout> | null;
   private isRunning: boolean;
 
   constructor() {

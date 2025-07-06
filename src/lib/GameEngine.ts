@@ -76,9 +76,18 @@ export class GameEngine {
 
   // Update configuration
   public setConfig(config: DifficultyConfig): void {
-    this.config = { ...config };
+    // Prevent invalid configurations that could lead to crashes or endless
+    // loops (e.g. requesting more mines than there are cells).
+    const maxMines = config.rows * config.cols - 1; // reserve at least one safe cell
+    const sanitizedMines = Math.min(Math.max(config.mines, 0), maxMines);
+
+    this.config = { ...config, mines: sanitizedMines };
+
+    // Update statistics to reflect new configuration.
     this.stats.totalMines = this.config.mines;
     this.stats.flagsRemaining = this.config.mines;
+
+    // Re-create the grid with the new validated settings.
     this.gridManager.reset(this.config.rows, this.config.cols, this.config.mines);
   }
 
